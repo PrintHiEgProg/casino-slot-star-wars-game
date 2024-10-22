@@ -8,7 +8,7 @@ export default class Symbol {
       this.img = cache[name].cloneNode();
     } else {
       this.img = new Image();
-      this.img.src = require(`../assets/symbols/${name}.svg`);
+      this.img.src = `./assets/symbols/${name}.svg`;
 
       cache[name] = this.img;
     }
