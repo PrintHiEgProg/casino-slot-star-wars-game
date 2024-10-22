@@ -62,7 +62,7 @@ export default class Slot {
     this.balanceElement = document.getElementById("balance");
     this.betInput = document.getElementById("form-bet");
     // Инициализируем значение ставки
-    this.balance = 10.0;
+    this.balance = 100.0;
     this.bet = 0.0;
 
     this.betInput.addEventListener("input", () => this.updateBetFromInput());
