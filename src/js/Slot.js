@@ -21,6 +21,20 @@ export default class Slot {
       ["death_star", "death_star", "death_star"],
     ];
 
+    document.addEventListener("DOMContentLoaded", function () {
+      // Функция для получения значения параметра из URL
+      function getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+      }
+
+      // Получаем значение параметра userid
+      const userId = getQueryParam("userid");
+
+      // Выводим значение в консоль (или используем его по своему усмотрению)
+      console.log("User ID:", userId);
+    });
+
     this.container = domElement;
 
     this.reels = Array.from(this.container.getElementsByClassName("reel")).map(
