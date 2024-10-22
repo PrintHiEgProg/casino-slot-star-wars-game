@@ -60,10 +60,12 @@ export default class Slot {
 
     this.betElement = document.getElementById("bet");
     this.balanceElement = document.getElementById("balance");
+    this.betInput = document.getElementById("form-bet");
     // Инициализируем значение ставки
     this.balance = 10.0;
     this.bet = 0.0;
 
+    this.betInput.addEventListener("input", () => this.updateBetFromInput());
     // Добавляем обработчики событий для кнопок управления ставками
     this.incrementBtns.forEach((btn, index) => {
       btn.addEventListener("click", () => this.incrementBet(index));
@@ -84,6 +86,17 @@ export default class Slot {
 
   updateBalance() {
     this.balanceElement.textContent = this.balance.toFixed(2);
+  }
+
+  updateBetFromInput() {
+    const value = parseFloat(this.betInput.value);
+    if (!isNaN(value)) {
+      this.bet = parseFloat(value.toFixed(2));
+      this.updateBet();
+    } else {
+      this.bet = 0.0;
+      this.updateBet();
+    }
   }
 
   // Метод для увеличения ставки
