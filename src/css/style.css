@@ -1,8 +1,13 @@
+* {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 body {
   width: 100vw;
   height: 100vh;
   padding: 1rem;
-  background-image: url("../assets/bg.jpg");
   background-size: cover;
   display: flex;
   align-items: center;
@@ -12,16 +17,16 @@ body {
 
 @media only screen and (max-width: 1200px) {
   body {
-    background-image: url("../assets/bg_small.jpg");
+    background-color: #191b3c;
   }
 }
 
 #reels {
   display: flex;
-  width: 100vw;
-  height: calc((3 / 5) * 100vw);
-  max-height: calc(90vh - 50px - 40px);
-  max-width: calc((5 / 3) * (90vh - 50px - 40px));
+  width: 80vw;
+  height: calc((3 / 5) * 80vw);
+  max-height: calc(80vh - 50px - 40px);
+  max-width: calc((5 / 3) * (80vh - 50px - 40px));
 }
 
 .reel {
@@ -45,12 +50,6 @@ body {
 }
 
 #controls {
-  background-color: rgba(255, 255, 255, 0.9);
-  height: 50px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 5px 30px;
 }
 
 #controls label {
@@ -61,6 +60,10 @@ body {
 
 #controls label input {
   margin-right: 5px;
+}
+
+.autoplay {
+  color: #ffffff;
 }
 
 input[type="checkbox"] {
@@ -80,4 +83,68 @@ input[type="checkbox"] {
 
 #slot.inverted .reel > .icons > img {
   transform: scaleY(-1);
+}
+
+#spin {
+  background-color: #cb65db;
+  border-radius: 15px;
+  font-size: 100%;
+  color: #ffffff;
+  margin-top: 5%;
+  margin-left: 32%;
+  width: 36%;
+  height: 45px;
+  -webkit-border-radius: 15px;
+  -moz-border-radius: 15px;
+  -ms-border-radius: 15px;
+  -o-border-radius: 15px;
+}
+
+.bet-box-box {
+  margin-top: 5%;
+}
+
+.bet-box {
+  margin-top: 3%;
+  display: flex;
+  width: 80vw;
+}
+
+.bet-box-btn {
+  background-color: #9e258c;
+  margin-left: 1%;
+  margin-right: 1%;
+  width: 15%;
+  height: 20px;
+  font-size: 37%;
+  color: #ffffff;
+  border-radius: 20px;
+  -webkit-border-radius: 20px;
+  -moz-border-radius: 20px;
+  -ms-border-radius: 20px;
+  -o-border-radius: 20px;
+}
+
+.bet-box-btn:active {
+  background-color: #761a68;
+}
+
+.bet-box-sum {
+  display: flex;
+  color: #ffffff;
+  font-size: 90%;
+}
+
+#bet {
+  margin-left: 2%;
+}
+
+.balance-box-sum {
+  display: flex;
+  color: #ffffff;
+  font-size: 90%;
+}
+
+#balance {
+  margin-left: 2%;
 }

@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>HTML 5 Slot Machine</title>
     <link
       rel="stylesheet"
@@ -9,7 +14,6 @@
   </head>
   <body>
     <div id="slot">
-      <div id="jackpot">Jackpot: <span id="jp">5.555.555</span></div>
       <div id="reels">
         <div class="reel"></div>
         <div class="reel"></div>
@@ -18,11 +22,39 @@
         <div class="reel"></div>
       </div>
       <div id="controls">
-        <button type="button" id="spin">SPIN</button>
-        <label>
+        <label class="autoplay" style="display: none">
           <input type="checkbox" name="autoplay" id="autoplay" />
           Autoplay
         </label>
+        <div class="balance-box-sum">
+          Ваш баланс:
+          <div id="balance">10.00</div>
+          <div>$</div>
+        </div>
+        <div class="bet-box-sum">
+          Ваша ставка:
+          <div id="bet">0.00</div>
+          <div>$</div>
+        </div>
+        <div class="bet-box-box">
+          <div class="bet-box">
+            <button class="bet-box-btn" id="incrementBtn-1">+0.1</button>
+            <button class="bet-box-btn" id="incrementBtn-2">+1.0</button>
+            <button class="bet-box-btn" id="incrementBtn-3">+10.0</button>
+            <button class="bet-box-btn" id="incrementBtn-4">+50.0</button>
+            <button class="bet-box-btn" id="incrementBtn-5">+100.0</button>
+            <button class="bet-box-btn" id="incrementBtn-6">+500.0</button>
+          </div>
+          <div class="bet-box">
+            <button class="bet-box-btn" id="decrementBtn-1">-0.1</button>
+            <button class="bet-box-btn" id="decrementBtn-2">-1.0</button>
+            <button class="bet-box-btn" id="decrementBtn-3">-10.0</button>
+            <button class="bet-box-btn" id="decrementBtn-4">-50.0</button>
+            <button class="bet-box-btn" id="decrementBtn-5">-100.0</button>
+            <button class="bet-box-btn" id="decrementBtn-6">-500.0</button>
+          </div>
+        </div>
+        <button type="button" id="spin">SPIN</button>
       </div>
     </div>
   </body>
