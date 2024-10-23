@@ -75,6 +75,8 @@ export default class Slot {
     this.betElement = document.getElementById("bet");
     this.balanceElement = document.getElementById("balance");
     this.betInput = document.getElementById("form-bet");
+    this.clearButton = document.getElementById("clear-btn");
+    this.allInButton = document.getElementById("all-in-btn");
     // Инициализируем значение ставки
     this.balance = 100.0;
     this.bet = 0.0;
@@ -88,6 +90,11 @@ export default class Slot {
     this.decrementBtns.forEach((btn, index) => {
       btn.addEventListener("click", () => this.decrementBet(index));
     });
+
+    // Добавляем обработчик события для кнопки CLEAR
+    this.clearButton.addEventListener("click", () => this.clearBet());
+
+    this.allInButton.addEventListener("click", () => this.allInBet());
 
     // Инициализация значения ставки на экране
     this.updateBet();
@@ -129,6 +136,17 @@ export default class Slot {
         this.updateBet();
       }
     }
+  }
+
+  // Метод для очистки ставки
+  clearBet() {
+    this.bet = 0.0;
+    this.updateBet();
+  }
+
+  allInBet() {
+    this.bet = this.balance;
+    this.updateBet();
   }
 
   spin() {
