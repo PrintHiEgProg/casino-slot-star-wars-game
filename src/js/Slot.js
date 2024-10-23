@@ -77,9 +77,12 @@ export default class Slot {
     this.betInput = document.getElementById("form-bet");
     this.clearButton = document.getElementById("clear-btn");
     this.allInButton = document.getElementById("all-in-btn");
+    this.yesButton = document.getElementById("yes-btn");
+    this.windowTextElement = document.getElementById("window-popup-text");
     // Инициализируем значение ставки
     this.balance = 100.0;
     this.bet = 0.0;
+    this.windowText = "";
 
     this.betInput.addEventListener("input", () => this.updateBetFromInput());
     // Добавляем обработчики событий для кнопок управления ставками
@@ -92,6 +95,7 @@ export default class Slot {
     });
 
     // Добавляем обработчик события для кнопки CLEAR
+    this.yesButton.addEventListener("click", () => this.closeModal());
     this.clearButton.addEventListener("click", () => this.clearBet());
 
     this.allInButton.addEventListener("click", () => this.allInBet());
@@ -107,6 +111,10 @@ export default class Slot {
 
   updateBalance() {
     this.balanceElement.textContent = this.balance.toFixed(2);
+  }
+
+  updateWindowText() {
+    this.windowTextElement.textContent = this.windowText;
   }
 
   updateBetFromInput() {
@@ -136,6 +144,13 @@ export default class Slot {
         this.updateBet();
       }
     }
+  }
+  openModal() {
+    document.querySelector(".CheckYearsOld").style.display = "block";
+  }
+
+  closeModal() {
+    document.querySelector(".CheckYearsOld").style.display = "none";
   }
 
   // Метод для очистки ставки
@@ -175,10 +190,14 @@ export default class Slot {
           })
         ).then(() => this.onSpinEnd(this.nextSymbols));
       } else {
-        alert("недостаточно средств");
+        this.windowText = "Недостаточно средств";
+        this.updateWindowText();
+        this.openModal();
       }
     } else {
-      alert("Сделайте ставку");
+      this.windowText = "Сделайте ставку";
+      this.updateWindowText();
+      this.openModal();
     }
   }
 
@@ -196,6 +215,8 @@ export default class Slot {
     const decrementBtn4 = document.getElementById("decrementBtn-4");
     const decrementBtn5 = document.getElementById("decrementBtn-5");
     const decrementBtn6 = document.getElementById("decrementBtn-6");
+    const clearButton = document.getElementById("clear-btn");
+    const allInButton = document.getElementById("all-in-btn");
     incrementBtn1.disabled = true;
     incrementBtn2.disabled = true;
     incrementBtn3.disabled = true;
@@ -208,6 +229,9 @@ export default class Slot {
     decrementBtn4.disabled = true;
     decrementBtn5.disabled = true;
     decrementBtn6.disabled = true;
+    allInButton.disabled = true;
+    clearButton.disabled = true;
+
     this.config.onSpinStart?.(symbols);
   }
 
@@ -225,6 +249,8 @@ export default class Slot {
     const decrementBtn4 = document.getElementById("decrementBtn-4");
     const decrementBtn5 = document.getElementById("decrementBtn-5");
     const decrementBtn6 = document.getElementById("decrementBtn-6");
+    const clearButton = document.getElementById("clear-btn");
+    const allInButton = document.getElementById("all-in-btn");
     incrementBtn1.disabled = false;
     incrementBtn2.disabled = false;
     incrementBtn3.disabled = false;
@@ -237,6 +263,8 @@ export default class Slot {
     decrementBtn4.disabled = false;
     decrementBtn5.disabled = false;
     decrementBtn6.disabled = false;
+    allInButton.disabled = false;
+    clearButton.disabled = false;
 
     this.config.onSpinEnd?.(symbols);
 
@@ -269,6 +297,12 @@ export default class Slot {
         this.balance = this.balance + jackpot;
         this.updateBalance();
       }
+      if (jackpotResult.vertThree > 0) {
+        let jackpot = jackpotResult.vertThree * this.bet;
+        jackpot = jackpot * 1;
+        this.balance = this.balance + jackpot;
+        this.updateBalance();
+      }
     } else {
       // проигрыш
     }
@@ -279,6 +313,7 @@ export default class Slot {
       three: 0,
       four: 0,
       five: 0,
+      vertThree: 0,
     };
 
     // Проверка каждого горизонтального ряда
@@ -302,6 +337,30 @@ export default class Slot {
             result.five++;
           }
           reel += count - 1; // Пропускаем уже проверенные символы
+        }
+      }
+    }
+
+    for (let col = 0; col < symbols.length; col++) {
+      for (let row = 0; row < symbols[col].length; row++) {
+        let count = 1;
+        for (let i = row + 1; i < symbols[col].length; i++) {
+          if (symbols[col][i] === symbols[col][i - 1]) {
+            count++;
+          } else {
+            break;
+          }
+        }
+
+        if (count >= 3) {
+          if (count === 3) {
+            result.vertThree++;
+          } else if (count === 4) {
+            //
+          } else if (count === 5) {
+            //
+          }
+          row += count - 1; // Пропускаем уже проверенные символы
         }
       }
     }
