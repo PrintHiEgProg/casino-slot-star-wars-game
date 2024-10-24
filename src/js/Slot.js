@@ -196,13 +196,13 @@ export default class Slot {
     this.updateBet();
   }
 
-  spin() {
+  async spin() {
     this.updateBet();
-    this.fetchUserBalance();
+    await this.fetchUserBalance();
     if (this.bet > 0) {
       if (this.balance >= this.bet) {
         this.balance = this.balance - this.bet;
-        this.updateBalance(); // Обновляем баланс после вычитания ставки
+        await this.updateBalance(); // Обновляем баланс после вычитания ставки
         this.updateBet();
         this.currentSymbols = this.nextSymbols;
         this.nextSymbols = [
@@ -215,7 +215,7 @@ export default class Slot {
 
         this.onSpinStart(this.nextSymbols);
 
-        return Promise.all(
+        await Promise.all(
           this.reels.map((reel) => {
             reel.renderSymbols(this.nextSymbols[reel.idx]);
             return reel.spin();
@@ -267,7 +267,7 @@ export default class Slot {
     this.config.onSpinStart?.(symbols);
   }
 
-  onSpinEnd(symbols) {
+  async onSpinEnd(symbols) {
     this.spinButton.disabled = false;
     const incrementBtn1 = document.getElementById("incrementBtn-1");
     const incrementBtn2 = document.getElementById("incrementBtn-2");
@@ -314,31 +314,27 @@ export default class Slot {
     ) {
       if (jackpotResult.three > 0) {
         let jackpot = jackpotResult.three * this.bet;
-        this.fetchUserBalance();
         jackpot = jackpot * 5;
         this.balance = this.balance + jackpot;
-        this.updateBalance(); // Обновляем баланс после выигрыша
+        await this.updateBalance(); // Обновляем баланс после выигрыша
       }
       if (jackpotResult.four > 0) {
         let jackpot = jackpotResult.four * this.bet;
-        this.fetchUserBalance();
         jackpot = jackpot * 10;
         this.balance = this.balance + jackpot;
-        this.updateBalance(); // Обновляем баланс после выигрыша
+        await this.updateBalance(); // Обновляем баланс после выигрыша
       }
       if (jackpotResult.five > 0) {
         let jackpot = jackpotResult.five * this.bet;
-        this.fetchUserBalance();
         jackpot = jackpot * 100;
         this.balance = this.balance + jackpot;
-        this.updateBalance(); // Обновляем баланс после выигрыша
+        await this.updateBalance(); // Обновляем баланс после выигрыша
       }
       if (jackpotResult.vertThree > 0) {
         let jackpot = jackpotResult.vertThree * this.bet;
-        this.fetchUserBalance();
         jackpot = jackpot * 2;
         this.balance = this.balance + jackpot;
-        this.updateBalance(); // Обновляем баланс после выигрыша
+        await this.updateBalance(); // Обновляем баланс после выигрыша
       }
     }
   }
