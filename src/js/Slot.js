@@ -22,9 +22,7 @@ export default class Slot {
       ["death_star", "death_star", "death_star"],
     ];
 
-    this.userId = null; // Объявляем userId
-
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", function () {
       // Функция для получения значения параметра из URL
       function getQueryParam(param) {
         const urlParams = new URLSearchParams(window.location.search);
@@ -35,10 +33,11 @@ export default class Slot {
       this.userId = getQueryParam("userid");
 
       // Выводим значение в консоль (или используем его по своему усмотрению)
-      console.log("User ID:", this.userId);
+      console.log("User ID:", userId);
     });
 
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", function () {
+      // Функция для получения значения параметра из URL
       this.fetchUserBalance();
     });
 
@@ -113,28 +112,25 @@ export default class Slot {
 
   fetchUserBalance = async () => {
     try {
+      userId = getQueryParam("userid");
       const response = await axios.get(
-        `https://printhiegprog-casino-server-fa31.twc1.net/api/get-balance/${this.userId}`
+        `https://printhiegprog-casino-server-fa31.twc1.net/api/get-balance/${userId}`
       );
-      this.balance = response.data.balance;
-      this.updateBalanceElement();
-    } catch (err) {
-      console.error("Error fetching user balance:", err);
-    }
+      balance = response.data.balance;
+    } catch (err) {}
   };
 
   updateBalance = async () => {
     try {
+      userId = getQueryParam("userid");
       const response = await axios.post(
         "https://printhiegprog-casino-server-fa31.twc1.net/api/update-balance",
         {
-          entries: [{ userId: this.userId, balance: parseFloat(this.balance) }],
+          entries: [{ userId, balance: parseFloat(balance) }],
         }
       );
-      this.updateBalanceElement();
-    } catch (err) {
-      console.error("Error updating user balance:", err);
-    }
+    } catch (err) {}
+    this.updateBalanceElement();
   };
 
   // Метод для обновления значения ставки на экране
@@ -198,6 +194,7 @@ export default class Slot {
   }
 
   spin() {
+    userId = getQueryParam("userid");
     this.updateBalance();
     this.updateBet();
     this.fetchUserBalance();
