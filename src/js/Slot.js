@@ -1,5 +1,6 @@
 import Reel from "./Reel.js";
 import Symbol from "./Symbol.js";
+import axios from "axios";
 
 export default class Slot {
   constructor(domElement, config = {}) {
@@ -127,7 +128,7 @@ export default class Slot {
       const response = await axios.post(
         "https://printhiegprog-casino-server-fa31.twc1.net/api/update-balance",
         {
-          entries: [{ userId: this.userId, balance: parseFloat(this.balance) }],
+          entries: [{ userId: this.userId, balance: this.balance }],
         }
       );
       this.updateBalanceElement();
@@ -203,7 +204,7 @@ export default class Slot {
     if (this.bet > 0) {
       if (this.balance >= this.bet) {
         this.balance = this.balance - this.bet;
-        this.updateBalance();
+        this.updateBalance(); // Обновляем баланс после вычитания ставки
         this.updateBet();
         this.currentSymbols = this.nextSymbols;
         this.nextSymbols = [
@@ -317,29 +318,26 @@ export default class Slot {
         let jackpot = jackpotResult.three * this.bet;
         jackpot = jackpot * 5;
         this.balance = this.balance + jackpot;
-        this.updateBalance();
+        this.updateBalance(); // Обновляем баланс после выигрыша
       }
       if (jackpotResult.four > 0) {
         let jackpot = jackpotResult.four * this.bet;
         jackpot = jackpot * 10;
         this.balance = this.balance + jackpot;
-        this.updateBalance();
+        this.updateBalance(); // Обновляем баланс после выигрыша
       }
       if (jackpotResult.five > 0) {
         let jackpot = jackpotResult.five * this.bet;
         jackpot = jackpot * 100;
         this.balance = this.balance + jackpot;
-        this.updateBalance();
+        this.updateBalance(); // Обновляем баланс после выигрыша
       }
       if (jackpotResult.vertThree > 0) {
         let jackpot = jackpotResult.vertThree * this.bet;
         jackpot = jackpot * 2;
         this.balance = this.balance + jackpot;
-        this.updateBalance();
+        this.updateBalance(); // Обновляем баланс после выигрыша
       }
-      this.updateBalance();
-    } else {
-      this.updateBalance();
     }
   }
 
