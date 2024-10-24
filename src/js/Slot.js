@@ -197,7 +197,6 @@ export default class Slot {
   }
 
   spin() {
-    this.updateBalance();
     this.updateBet();
     this.fetchUserBalance();
     if (this.bet > 0) {
@@ -315,24 +314,28 @@ export default class Slot {
     ) {
       if (jackpotResult.three > 0) {
         let jackpot = jackpotResult.three * this.bet;
+        this.fetchUserBalance();
         jackpot = jackpot * 5;
         this.balance = this.balance + jackpot;
         this.updateBalance(); // Обновляем баланс после выигрыша
       }
       if (jackpotResult.four > 0) {
         let jackpot = jackpotResult.four * this.bet;
+        this.fetchUserBalance();
         jackpot = jackpot * 10;
         this.balance = this.balance + jackpot;
         this.updateBalance(); // Обновляем баланс после выигрыша
       }
       if (jackpotResult.five > 0) {
         let jackpot = jackpotResult.five * this.bet;
+        this.fetchUserBalance();
         jackpot = jackpot * 100;
         this.balance = this.balance + jackpot;
         this.updateBalance(); // Обновляем баланс после выигрыша
       }
       if (jackpotResult.vertThree > 0) {
         let jackpot = jackpotResult.vertThree * this.bet;
+        this.fetchUserBalance();
         jackpot = jackpot * 2;
         this.balance = this.balance + jackpot;
         this.updateBalance(); // Обновляем баланс после выигрыша
