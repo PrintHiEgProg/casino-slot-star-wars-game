@@ -29,10 +29,15 @@ export default class Slot {
       }
 
       // Получаем значение параметра userid
-      const userId = getQueryParam("userid");
+      this.userId = getQueryParam("userid");
 
       // Выводим значение в консоль (или используем его по своему усмотрению)
       console.log("User ID:", userId);
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+      // Функция для получения значения параметра из URL
+      this.fetchUserBalance();
     });
 
     this.container = domElement;
@@ -80,7 +85,7 @@ export default class Slot {
     this.yesButton = document.getElementById("yes-btn");
     this.windowTextElement = document.getElementById("window-popup-text");
     // Инициализируем значение ставки
-    this.balance = 100.0;
+    this.balance = 0;
     this.bet = 0.0;
     this.windowText = "";
 
@@ -103,6 +108,28 @@ export default class Slot {
     // Инициализация значения ставки на экране
     this.updateBet();
   }
+
+  fetchUserBalance = async () => {
+    try {
+      userId = getQueryParam("userid");
+      const response = await axios.get(
+        `https://printhiegprog-casino-server-fa31.twc1.net/api/get-balance/${userId}`
+      );
+      balance = response.data.balance;
+    } catch (err) {}
+  };
+
+  updateBalance = async () => {
+    try {
+      userId = getQueryParam("userid");
+      const response = await axios.post(
+        "https://printhiegprog-casino-server-fa31.twc1.net/api/update-balance",
+        {
+          entries: [{ userId, balance: parseFloat(balance) }],
+        }
+      );
+    } catch (err) {}
+  };
 
   // Метод для обновления значения ставки на экране
   updateBet() {
@@ -167,6 +194,7 @@ export default class Slot {
   spin() {
     this.updateBalance();
     this.updateBet();
+    this.fetchUserBalance();
     if (this.bet > 0) {
       if (this.balance >= this.bet) {
         this.balance = this.balance - this.bet;
@@ -277,7 +305,8 @@ export default class Slot {
     if (
       jackpotResult.three > 0 ||
       jackpotResult.four > 0 ||
-      jackpotResult.five > 0
+      jackpotResult.five > 0 ||
+      jackpotResult.vertThree > 0
     ) {
       if (jackpotResult.three > 0) {
         let jackpot = jackpotResult.three * this.bet;
@@ -299,12 +328,13 @@ export default class Slot {
       }
       if (jackpotResult.vertThree > 0) {
         let jackpot = jackpotResult.vertThree * this.bet;
-        jackpot = jackpot * 1;
+        jackpot = jackpot * 2;
         this.balance = this.balance + jackpot;
         this.updateBalance();
       }
+      this.updateBalance();
     } else {
-      // проигрыш
+      this.updateBalance();
     }
   }
 
