@@ -1,6 +1,5 @@
 import Reel from "./Reel.js";
 import Symbol from "./Symbol.js";
-import axios from "axios";
 
 export default class Slot {
   constructor(domElement, config = {}) {
