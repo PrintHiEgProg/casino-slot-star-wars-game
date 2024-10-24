@@ -129,6 +129,7 @@ export default class Slot {
         }
       );
     } catch (err) {}
+    this.updateBalanceElement();
   };
 
   // Метод для обновления значения ставки на экране
@@ -136,7 +137,7 @@ export default class Slot {
     this.betElement.textContent = this.bet.toFixed(2);
   }
 
-  updateBalance() {
+  updateBalanceElement() {
     this.balanceElement.textContent = this.balance.toFixed(2);
   }
 
@@ -192,6 +193,7 @@ export default class Slot {
   }
 
   spin() {
+    userId = getQueryParam("userid");
     this.updateBalance();
     this.updateBet();
     this.fetchUserBalance();
