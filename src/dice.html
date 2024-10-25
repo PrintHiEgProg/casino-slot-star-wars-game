@@ -283,8 +283,7 @@
     <button id="playButton">Play</button>
 
     <script>
-      this.userId = null; // Объявляем userId
-
+      this.userId = null;
       document.addEventListener("DOMContentLoaded", () => {
         // Функция для получения значения параметра из URL
         function getQueryParam(param) {
@@ -297,28 +296,31 @@
 
         // Выводим значение в консоль (или используем его по своему усмотрению)
         console.log("User ID:", this.userId);
+
+        let dice = document.getElementById("dice");
+        let outputDiv = document.getElementById("diceResult");
+        let playButton = document.getElementById("playButton");
+
+        function rollDice() {
+          playButton.disabled = true;
+          let result = Math.floor(Math.random() * (6 - 1 + 1)) + 1;
+          dice.dataset.side = result;
+          dice.classList.toggle("reRoll");
+
+          console.log(result);
+
+          outputDiv.classList.remove("reveal");
+          outputDiv.classList.add("hide");
+          outputDiv.innerHTML = "You've got " + result;
+
+          setTimeout(function () {
+            outputDiv.classList.add("reveal");
+            playButton.disabled = false;
+          }, 1500);
+        }
+
+        playButton.addEventListener("click", rollDice);
       });
-
-      let dice = document.getElementById("dice");
-      var outputDiv = document.getElementById("diceResult");
-      var playButton = document.getElementById("playButton");
-
-      function rollDice() {
-        let result = Math.floor(Math.random() * (6 - 1 + 1)) + 1;
-        dice.dataset.side = result;
-        dice.classList.toggle("reRoll");
-
-        console.log(result);
-
-        outputDiv.classList.remove("reveal");
-        outputDiv.classList.add("hide");
-        outputDiv.innerHTML = "You've got " + result;
-        setTimeout(function () {
-          outputDiv.classList.add("reveal");
-        }, 1500);
-      }
-
-      playButton.addEventListener("click", rollDice);
     </script>
   </body>
 </html>

@@ -354,6 +354,7 @@
       var playButton = document.getElementById("playButton");
 
       function rollDice() {
+        playButton.disabled = true;
         let result1 = Math.floor(Math.random() * (6 - 1 + 1)) + 1;
         let result2 = Math.floor(Math.random() * (6 - 1 + 1)) + 1;
 
@@ -370,6 +371,7 @@
         outputDiv.innerHTML = "You've got " + result1 + " and " + result2;
         setTimeout(function () {
           outputDiv.classList.add("reveal");
+          playButton.disabled = false;
         }, 1500);
       }
 
