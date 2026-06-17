@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucky Wheel - TWA Prototype</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #121214;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .header {
+            width: 90%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .balance { color: #4cd964; }
+
+        .wheel-container {
+            position: relative;
+            width: 85%;
+            max-width: 320px;
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Маркер указателя сверху */
+        .pointer {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 25px solid #ff3b30;
+            z-index: 10;
+            filter: drop-shadow(0px 4px 5px rgba(0,0,0,0.5));
+        }
+
+        .status-panel {
+            text-align: center;
+            font-size: 16px;
+            color: #8e8e93;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            width: 90%;
+            padding-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .bet-input-container {
+            display: flex;
+            background: #1a1a1e;
+            border-radius: 12px;
+            border: 1px solid #2c2c35;
+            padding: 5px;
+        }
+
+        .bet-btn-mod {
+            background: #2c2c35;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        input {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            outline: none;
+        }
+
+        .spin-btn {
+            width: 100%;
+            padding: 18px;
+            border-radius: 12px;
+            border: none;
+            font-size: 20px;
+            font-weight: bold;
+            color: black;
+            background: #ffcc00;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            text-transform: uppercase;
+        }
+
+        .spin-btn:disabled {
+            background: #2c2c35;
+            color: #8e8e93;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>🎡 WHEEL</div>
+        <div class="balance">Баланс: $<span id="balance-val">100.00</span></div>
+    </div>
+
+    <div id="status" class="status-panel">Испытай свою удачу!</div>
+
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <canvas id="wheel-canvas"></canvas>
+    </div>
+
+    <div class="controls">
+        <div class="bet-input-container">
+            <button class="bet-btn-mod" onclick="modBet(0.5)">1/2</button>
+            <input type="number" id="bet-amount" value="10" min="1">
+            <button class="bet-btn-mod" onclick="modBet(2)">X2</button>
+        </div>
+        <button id="spin-button" class="spin-btn">Крутить</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('wheel-canvas');
+        const ctx = canvas.getContext('2d');
+        const balanceDisplay = document.getElementById('balance-val');
+        const betInput = document.getElementById('bet-amount');
+        const spinBtn = document.getElementById('spin-button');
+        const statusText = document.getElementById('status');
+
+        let balance = 100.00;
+        
+        // Сектора колеса и их цвета
+        const sectors = [
+            { label: "0x", mult: 0.0, color: "#2c2c35" },
+            { label: "1.2x", mult: 1.2, color: "#007aff" },
+            { label: "0.5x", mult: 0.5, color: "#ff9500" },
+            { label: "2x", mult: 2.0, color: "#4cd964" },
+            { label: "0x", mult: 0.0, color: "#2c2c35" },
+            { label: "1.5x", mult: 1.5, color: "#007aff" },
+            { label: "0.2x", mult: 0.2, color: "#ff9500" },
+            { label: "5x", mult: 5.0, color: "#ffcc00" }
+        ];
+
+        const numSectors = sectors.length;
+        const arc = Math.PI * 2 / numSectors;
+        let currentAngle = 0;
+        let isSpinning = false;
+
+        function initCanvas() {
+            const size = canvas.parentElement.clientWidth;
+            canvas.width = size * window.devicePixelRatio;
+            canvas.height = size * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            drawWheel();
+        }
+
+        window.addEventListener('resize', initCanvas);
+        setTimeout(initCanvas, 100);
+
+        function modBet(factor) {
+            if (isSpinning) return;
+            let currentBet = parseFloat(betInput.value);
+            betInput.value = Math.max(1, Math.floor(currentBet * factor));
+        }
+
+        function drawWheel() {
+            const size = canvas.parentElement.clientWidth;
+            const center = size / 2;
+            ctx.clearRect(0, 0, size, size);
+
+            for (let i = 0; i < numSectors; i++) {
+                const angle = currentAngle + i * arc;
+                ctx.fillStyle = sectors[i].color;
+                
+                // Отрисовка куска пирога
+                ctx.beginPath();
+                ctx.moveTo(center, center);
+                ctx.arc(center, center, center - 10, angle, angle + arc);
+                ctx.lineTo(center, center);
+                ctx.fill();
+                ctx.strokeStyle = '#121214';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Текст внутри сектора
+                ctx.save();
+                ctx.fillStyle = sectors[i].mult >= 2 ? '#000000' : '#ffffff';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.translate(center, center);
+                ctx.rotate(angle + arc / 2);
+                ctx.fillText(sectors[i].label, center - 25, 6);
+                ctx.restore();
+            }
+
+            // Центральный декоративный круг
+            ctx.beginPath();
+            ctx.arc(center, center, 20, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+        }
+
+        spinBtn.addEventListener('click', () => {
+            if (isSpinning) return;
+            let bet = parseFloat(betInput.value);
+
+            if (bet > balance || bet <= 0) {
+                alert('Недостаточно баланса!');
+                return;
+            }
+
+            balance -= bet;
+            balanceDisplay.innerText = balance.toFixed(2);
+            statusText.innerText = "Колесо крутится...";
+            
+            isSpinning = true;
+            spinBtn.disabled = true;
+
+            // Настройка анимации вращения
+            const spinDuration = 4000; // 4 секунды
+            const startTime = performance.now();
+            
+            // Выбираем случайный сектор назначения заранее для честного бэкенд-расчета в будущем
+            const targetSectorIndex = Math.floor(Math.random() * numSectors);
+            
+            // Расчет конечного угла так, чтобы маркер (сверху, угол -PI/2) указывал на нужный сектор
+            const targetAngleInSector = Math.random() * (arc - 0.2) + 0.1; 
+            const finalAngle = (-Math.PI / 2) - (targetSectorIndex * arc) - targetAngleInSector + (Math.PI * 2 * 5); // 5 полных оборотов
+
+            const startAngle = currentAngle % (Math.PI * 2);
+
+            function animateSpin(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / spinDuration, 1);
+                
+                // Функция плавного замедления (Ease-Out)
+                const easeOutValue = 1 - Math.pow(1 - progress, 3);
+                
+                currentAngle = startAngle + (finalAngle - startAngle) * easeOutValue;
+                drawWheel();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateSpin);
+                } else {
+                    // Конец вращения
+                    isSpinning = false;
+                    spinBtn.disabled = false;
+                    
+                    let resultSector = sectors[targetSectorIndex];
+                    let win = bet * resultSector.mult;
+                    balance += win;
+                    
+                    balanceDisplay.innerText = balance.toFixed(2);
+                    if (resultSector.mult > 1) {
+                        statusText.innerText = `Победа! Вы выиграли $${win.toFixed(2)} (${resultSector.label})`;
+                    } else if (resultSector.mult > 0) {
+                        statusText.innerText = `Возврат части ставки: $${win.toFixed(2)}`;
+                    } else {
+                        statusText.innerText = "Повезет в следующий раз!";
+                    }
+                }
+            }
+
+            requestAnimationFrame(animateSpin);
+        });
+    </script>
+</body>
+</html>
