@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plinko Game - TWA Prototype</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #121214;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .header {
+            width: 95%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .balance {
+            color: #4cd964;
+        }
+
+        .board-container {
+            position: relative;
+            width: 95%;
+            height: 60vh;
+            background: #1a1a1e;
+            border-radius: 16px;
+            border: 1px solid #2c2c35;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .controls {
+            width: 95%;
+            padding-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .bet-input-container {
+            display: flex;
+            background: #1a1a1e;
+            border-radius: 12px;
+            border: 1px solid #2c2c35;
+            padding: 5px;
+        }
+
+        .bet-btn-mod {
+            background: #2c2c35;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        input {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            outline: none;
+        }
+
+        .drop-btn {
+            width: 100%;
+            padding: 18px;
+            border-radius: 12px;
+            border: none;
+            font-size: 20px;
+            font-weight: bold;
+            color: black;
+            background: #4cd964;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            text-transform: uppercase;
+        }
+
+        .drop-btn:active {
+            transform: scale(0.98);
+            background: #3fe25b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>🔵 PLINKO</div>
+        <div class="balance">Баланс: $<span id="balance-val">100.00</span></div>
+    </div>
+
+    <div class="board-container">
+        <canvas id="plinko-canvas"></canvas>
+    </div>
+
+    <div class="controls">
+        <div class="bet-input-container">
+            <button class="bet-btn-mod" onclick="modBet(0.5)">1/2</button>
+            <input type="number" id="bet-amount" value="10" min="1">
+            <button class="bet-btn-mod" onclick="modBet(2)">X2</button>
+        </div>
+        <button id="drop-button" class="drop-btn">Запустить шарик</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('plinko-canvas');
+        const ctx = canvas.getContext('2d');
+        const balanceDisplay = document.getElementById('balance-val');
+        const betInput = document.getElementById('bet-amount');
+        const dropBtn = document.getElementById('drop-button');
+
+        let balance = 100.00;
+        
+        // Настройки пирамиды колышков
+        const rows = 8;
+        const pins = [];
+        const balls = [];
+        
+        // Коэффициенты ячеек снизу (от краев к центру)
+        const multipliers = [5.0, 2.0, 1.1, 0.5, 0.5, 1.1, 2.0, 5.0];
+        const bucketColors = ['#ff3b30', '#ff9500', '#ffcc00', '#4cd964', '#4cd964', '#ffcc00', '#ff9500', '#ff3b30'];
+
+        function initBoard() {
+            canvas.width = canvas.parentElement.clientWidth * window.devicePixelRatio;
+            canvas.height = canvas.parentElement.clientHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            pins.length = 0;
+            const startY = 60;
+            const rowSpacing = (canvas.parentElement.clientHeight - 120) / rows;
+
+            for (let i = 2; i <= rows + 1; i++) {
+                const rowPins = i;
+                const rowWidth = (rowPins - 1) * 32;
+                const startX = (canvas.parentElement.clientWidth / 2) - (rowWidth / 2);
+                const y = startY + (i - 2) * rowSpacing;
+
+                for (let j = 0; j < rowPins; j++) {
+                    const x = startX + j * 32;
+                    pins.push({ x, y, radius: 4 });
+                }
+            }
+        }
+
+        window.addEventListener('resize', initBoard);
+        setTimeout(initBoard, 100);
+
+        function modBet(factor) {
+            let currentBet = parseFloat(betInput.value);
+            betInput.value = Math.max(1, Math.floor(currentBet * factor));
+        }
+
+        dropBtn.addEventListener('click', () => {
+            let bet = parseFloat(betInput.value);
+            if (bet > balance || bet <= 0) {
+                alert('Недостаточно баланса!');
+                return;
+            }
+
+            balance -= bet;
+            balanceDisplay.innerText = balance.toFixed(2);
+
+            // Создаем новый шарик
+            balls.push({
+                x: canvas.parentElement.clientWidth / 2 + (Math.random() * 4 - 2),
+                y: 20,
+                vx: 0,
+                vy: 0,
+                radius: 6,
+                bet: bet,
+                gravity: 0.25,
+                bounce: 0.4
+            });
+        });
+
+        function updatePhysics() {
+            const width = canvas.parentElement.clientWidth;
+            const height = canvas.parentElement.clientHeight;
+            const bucketY = height - 40;
+            const bucketWidth = width / multipliers.length;
+
+            for (let i = balls.length - 1; i >= 0; i--) {
+                let ball = balls[i];
+
+                ball.vy += ball.gravity;
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                // Столкновения со стенами
+                if (ball.x - ball.radius < 0) { ball.x = ball.radius; ball.vx *= -1; }
+                if (ball.x + ball.radius > width) { ball.x = width - ball.radius; ball.vx *= -1; }
+
+                // Столкновения с колышками (простой расчет расстояния)
+                pins.forEach(pin => {
+                    let dx = ball.x - pin.x;
+                    let dy = ball.y - pin.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < ball.radius + pin.radius) {
+                        // Расталкиваем
+                        let overlap = (ball.radius + pin.radius) - dist;
+                        ball.x += (dx / dist) * overlap;
+                        ball.y += (dy / dist) * overlap;
+
+                        // Считаем угол отскока + добавляем легкий рандом
+                        let angle = Math.atan2(dy, dx);
+                        let speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) * ball.bounce;
+                        if(speed < 1.5) speed = 1.5; // чтобы не залипали
+
+                        ball.vx = Math.cos(angle) * speed + (Math.random() * 0.4 - 0.2);
+                        ball.vy = Math.sin(angle) * speed;
+                    }
+                });
+
+                // Попадание в нижнюю корзину
+                if (ball.y >= bucketY) {
+                    let bucketIndex = Math.floor(ball.x / bucketWidth);
+                    bucketIndex = Math.max(0, Math.min(bucketIndex, multipliers.length - 1));
+
+                    let mult = multipliers[bucketIndex];
+                    let win = ball.bet * mult;
+                    
+                    balance += win;
+                    balanceDisplay.innerText = balance.toFixed(2);
+
+                    // Удаляем шарик
+                    balls.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            const width = canvas.parentElement.clientWidth;
+            const height = canvas.parentElement.clientHeight;
+            ctx.clearRect(0, 0, width, height);
+
+            // Рисуем колышки
+            ctx.fillStyle = '#8e8e93';
+            pins.forEach(pin => {
+                ctx.beginPath();
+                ctx.arc(pin.x, pin.y, pin.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Рисуем корзины с коэффициентами
+            const bucketWidth = width / multipliers.length;
+            const bucketY = height - 35;
+            
+            for (let i = 0; i < multipliers.length; i++) {
+                ctx.fillStyle = bucketColors[i];
+                ctx.fillRect(i * bucketWidth + 2, bucketY, bucketWidth - 4, 30);
+                
+                ctx.fillStyle = '#000000';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(multipliers[i] + 'x', i * bucketWidth + bucketWidth / 2, bucketY + 18);
+            }
+
+            // Рисуем шарики
+            ctx.fillStyle = '#007aff';
+            balls.forEach(ball => {
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function loop() {
+            updatePhysics();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>
