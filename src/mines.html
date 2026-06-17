@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mines Game - TWA Prototype</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #121214;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .header {
+            width: 90%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .balance { color: #4cd964; }
+
+        .game-container {
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 340px;
+            aspect-ratio: 1;
+            background: #1a1a1e;
+            padding: 12px;
+            border-radius: 16px;
+            border: 1px solid #2c2c35;
+        }
+
+        .cell {
+            background: #2c2c35;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .cell:active:not(.revealed) { transform: scale(0.92); }
+        .cell.revealed.gem { background: rgba(76, 217, 100, 0.2); border: 2px solid #4cd964; }
+        .cell.revealed.mine { background: rgba(255, 59, 48, 0.2); border: 2px solid #ff3b30; }
+
+        .status-panel {
+            text-align: center;
+            font-size: 16px;
+            color: #8e8e93;
+            min-height: 24px;
+        }
+
+        .controls {
+            width: 90%;
+            padding-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .settings-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-box {
+            flex: 1;
+            background: #1a1a1e;
+            border-radius: 12px;
+            border: 1px solid #2c2c35;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .input-box span { font-size: 11px; color: #8e8e93; margin-bottom: 4px; }
+        
+        input, select {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 16px;
+            text-align: center;
+            outline: none;
+            width: 100%;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: none;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-transform: uppercase;
+        }
+
+        .btn-start { background: #007aff; }
+        .btn-cashout { background: #4cd964; color: #000; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>💎 MINES</div>
+        <div class="balance">Баланс: $<span id="balance-val">100.00</span></div>
+    </div>
+
+    <div class="game-container">
+        <div id="status" class="status-panel">Укажите ставку и начните игру</div>
+        <div class="grid" id="mine-grid"></div>
+    </div>
+
+    <div class="controls">
+        <div class="settings-row">
+            <div class="input-box">
+                <span>Ставка ($)</span>
+                <input type="number" id="bet-amount" value="10" min="1">
+            </div>
+            <div class="input-box">
+                <span>Мин (1-24)</span>
+                <select id="mines-count">
+                    <option value="1">1</option>
+                    <option value="3" selected>3</option>
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                </select>
+            </div>
+        </div>
+        <button id="action-btn" class="action-btn btn-start">Начать игру</button>
+    </div>
+
+    <script>
+        const grid = document.getElementById('mine-grid');
+        const actionBtn = document.getElementById('action-btn');
+        const statusText = document.getElementById('status');
+        const balanceDisplay = document.getElementById('balance-val');
+        const betInput = document.getElementById('bet-amount');
+        const minesSelect = document.getElementById('mines-count');
+
+        let balance = 100.00;
+        let gameState = 'IDLE'; // IDLE, PLAYING
+        let bet = 0;
+        let totalMines = 3;
+        let board = []; 
+        let revealedCount = 0;
+        let currentMultiplier = 1.00;
+
+        // Создаем пустое поле при старте
+        function createVisualGrid() {
+            grid.innerHTML = '';
+            for (let i = 0; i < 25; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.index = i;
+                cell.addEventListener('click', () => clickCell(i));
+                grid.appendChild(cell);
+            }
+        }
+
+        function calculateMultiplier() {
+            // Математическая формула расчета множителя на основе комбинаторики
+            let n = 25;
+            let m = totalMines;
+            let k = revealedCount;
+            
+            function fraction(num, den) {
+                let res = 1;
+                for(let i = 0; i < k; i++) {
+                    res *= (num - i) / (den - i);
+                }
+                return res;
+            }
+            // Множитель обратен вероятности выиграть + заложен дом эдж 4% (0.96)
+            let probability = fraction(n - m, n);
+            return Math.max(1.01, parseFloat((0.96 / probability).toFixed(2)));
+        }
+
+        actionBtn.addEventListener('click', () => {
+            if (gameState === 'IDLE') {
+                bet = parseFloat(betInput.value);
+                totalMines = parseInt(minesSelect.value);
+                if (bet > balance || bet <= 0) {
+                    alert('Недостаточно средств!');
+                    return;
+                }
+
+                balance -= bet;
+                revealedCount = 0;
+                currentMultiplier = 1.00;
+                gameState = 'PLAYING';
+                balanceDisplay.innerText = balance.toFixed(2);
+                
+                // Генерируем мины
+                board = Array(25).fill('gem');
+                let placedMines = 0;
+                while (placedMines < totalMines) {
+                    let idx = Math.floor(Math.random() * 25);
+                    if (board[idx] !== 'mine') {
+                        board[idx] = 'mine';
+                        placedMines++;
+                    }
+                }
+
+                createVisualGrid();
+                betInput.disabled = true;
+                minesSelect.disabled = true;
+                actionBtn.innerText = 'Забрать $0.00';
+                actionBtn.className = 'action-btn btn-cashout';
+                statusText.innerText = 'Ищите кристаллы, избегайте мин!';
+
+            } else if (gameState === 'PLAYING') {
+                // Кэшаут
+                let winAmount = bet * currentMultiplier;
+                balance += winAmount;
+                endGame(true, `Вы забрали $${winAmount.toFixed(2)}!`);
+            }
+        });
+
+        function clickCell(idx) {
+            if (gameState !== 'PLAYING') return;
+            const cells = document.querySelectorAll('.cell');
+            const cell = cells[idx];
+            if (cell.classList.contains('revealed')) return;
+
+            cell.classList.add('revealed');
+
+            if (board[idx] === 'mine') {
+                cell.classList.add('mine');
+                cell.innerText = '💣';
+                endGame(false, 'Бум! Вы подорвались на мине.');
+            } else {
+                cell.classList.add('gem');
+                cell.innerText = '💎';
+                revealedCount++;
+                currentMultiplier = calculateMultiplier();
+                
+                let currentWin = bet * currentMultiplier;
+                actionBtn.innerText = `Забрать $${currentWin.toFixed(2)} (${currentMultiplier}x)`;
+                statusText.innerText = `Открыто кристаллов: ${revealedCount}/25`;
+
+                if (revealedCount === 25 - totalMines) {
+                    balance += bet * currentMultiplier;
+                    endGame(true, 'Невероятно! Вы открыли все кристаллы!');
+                }
+            }
+        }
+
+        function endGame(isWin, message) {
+            gameState = 'IDLE';
+            statusText.innerText = message;
+            balanceDisplay.innerText = balance.toFixed(2);
+            
+            betInput.disabled = false;
+            minesSelect.disabled = false;
+            actionBtn.innerText = 'Начать игру';
+            actionBtn.className = 'action-btn btn-start';
+
+            // Показываем где были скрытые элементы
+            const cells = document.querySelectorAll('.cell');
+            board.forEach((item, i) => {
+                if (!cells[i].classList.contains('revealed')) {
+                    cells[i].classList.add('revealed');
+                    if (item === 'mine') {
+                        cells[i].classList.add('mine');
+                        cells[i].innerText = '💣';
+                        cells[i].style.opacity = '0.5';
+                    } else {
+                        cells[i].classList.add('gem');
+                        cells[i].innerText = '💎';
+                        cells[i].style.opacity = '0.3';
+                    }
+                }
+            });
+        }
+
+        createVisualGrid();
+    </script>
+</body>
+</html>
