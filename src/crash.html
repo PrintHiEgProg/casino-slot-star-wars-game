@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crash Game - TWA Prototype</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #121214;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .header {
+            width: 90%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .balance {
+            color: #4cd964;
+        }
+
+        .game-area {
+            position: relative;
+            width: 90%;
+            height: 50vh;
+            background: #1a1a1e;
+            border-radius: 16px;
+            border: 1px solid #2c2c35;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 16px;
+        }
+
+        .multiplier-display {
+            position: relative;
+            font-size: 64px;
+            font-weight: 800;
+            z-index: 10;
+            transition: color 0.2s;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .status-text {
+            position: absolute;
+            bottom: 20px;
+            font-size: 16px;
+            color: #8e8e93;
+            z-index: 10;
+        }
+
+        .controls {
+            width: 90%;
+            padding-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .bet-input-container {
+            display: flex;
+            background: #1a1a1e;
+            border-radius: 12px;
+            border: 1px solid #2c2c35;
+            padding: 5px;
+        }
+
+        .bet-btn-mod {
+            background: #2c2c35;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        input {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            outline: none;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 18px;
+            border-radius: 12px;
+            border: none;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            text-transform: uppercase;
+        }
+
+        .btn-start { background: #007aff; }
+        .btn-cashout { background: #4cd964; color: #000; }
+        .btn-disabled { background: #2c2c35; color: #8e8e93; cursor: not-allowed; }
+
+        .action-btn:active:not(.btn-disabled) {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>📈 CRASH</div>
+        <div class="balance">Баланс: $<span id="balance-val">100.00</span></div>
+    </div>
+
+    <div class="game-area">
+        <canvas id="chart"></canvas>
+        <div id="multiplier" class="multiplier-display">1.00x</div>
+        <div id="status" class="status-text">Ожидание ставки...</div>
+    </div>
+
+    <div class="controls">
+        <div class="bet-input-container">
+            <button class="bet-btn-mod" onclick="modBet(0.5)">1/2</button>
+            <input type="number" id="bet-amount" value="10" min="1">
+            <button class="bet-btn-mod" onclick="modBet(2)">X2</button>
+        </div>
+        <button id="action-button" class="action-btn btn-start">Поставить</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+        const multDisplay = document.getElementById('multiplier');
+        const statusDisplay = document.getElementById('status');
+        const actionBtn = document.getElementById('action-button');
+        const balanceDisplay = document.getElementById('balance-val');
+        const betInput = document.getElementById('bet-amount');
+
+        let balance = 100.00;
+        let currentMultiplier = 1.00;
+        let crashPoint = 0;
+        let gameInterval = null;
+        let gameState = 'IDLE'; // IDLE, RUNNING, CASHOUT, CRASHED
+        let startTime = 0;
+        let points = [];
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function modBet(factor) {
+            if (gameState !== 'IDLE') return;
+            let currentBet = parseFloat(betInput.value);
+            betInput.value = Math.max(1, Math.floor(currentBet * factor));
+        }
+
+        function generateCrashPoint() {
+            // Математика крэша: чаще падает на маленьких иксах, редко улетает в космос
+            const rand = Math.random();
+            if (rand < 0.05) return 1.00; // 5% моментальный крэш
+            return parseFloat((1.01 + Math.pow(Math.random(), 3) * 15).toFixed(2));
+        }
+
+        actionBtn.addEventListener('click', () => {
+            let bet = parseFloat(betInput.value);
+
+            if (gameState === 'IDLE') {
+                if (bet > balance || bet <= 0) {
+                    alert('Недостаточно баланса или неверная ставка!');
+                    return;
+                }
+                
+                // Старт раунда
+                balance -= bet;
+                updateUI();
+                gameState = 'RUNNING';
+                crashPoint = generateCrashPoint();
+                currentMultiplier = 1.00;
+                points = [{x: 0, y: canvas.height}];
+                startTime = Date.now();
+                
+                multDisplay.style.color = '#ffffff';
+                statusDisplay.innerText = 'График растет! Успей забрать!';
+                actionBtn.innerText = 'Забрать';
+                actionBtn.className = 'action-btn btn-cashout';
+
+                tick();
+            } else if (gameState === 'RUNNING') {
+                // Игрок забирает деньги
+                gameState = 'CASHOUT';
+                let winAmount = bet * currentMultiplier;
+                balance += winAmount;
+                updateUI();
+                
+                statusDisplay.innerText = `Вы забрали $${winAmount.toFixed(2)}!`;
+                multDisplay.style.color = '#4cd964';
+                actionBtn.innerText = 'Ждем крэш...';
+                actionBtn.className = 'action-btn btn-disabled';
+            }
+        });
+
+        function tick() {
+            if (gameState !== 'RUNNING' && gameState !== 'CASHOUT') return;
+
+            let elapsed = (Date.now() - startTime) / 1000;
+            // Экспоненциальный рост множителя со временем
+            currentMultiplier = parseFloat(Math.pow(1.15, elapsed * 3).toFixed(2));
+
+            if (currentMultiplier >= crashPoint) {
+                // Крэш!
+                if (gameState === 'RUNNING') {
+                    statusDisplay.innerText = 'Вы проиграли (Crashed)!';
+                    actionBtn.innerText = 'Взрыв!';
+                } else {
+                    statusDisplay.innerText = `Крэшнуло на ${crashPoint}x. Раунд окончен.`;
+                }
+                
+                gameState = 'CRASHED';
+                currentMultiplier = crashPoint;
+                multDisplay.innerText = currentMultiplier.toFixed(2) + 'x';
+                multDisplay.style.color = '#ff3b30';
+                
+                setTimeout(() => {
+                    gameState = 'IDLE';
+                    actionBtn.innerText = 'Поставить';
+                    actionBtn.className = 'action-btn btn-start';
+                    statusDisplay.innerText = 'Ожидание ставки...';
+                }, 3000);
+                
+                drawChart(true);
+                return;
+            }
+
+            multDisplay.innerText = currentMultiplier.toFixed(2) + 'x';
+            
+            // Расчет координат для отрисовки линии
+            let progressX = (elapsed / 8) * canvas.width; 
+            let progressY = canvas.height - ((currentMultiplier - 1) / 10) * canvas.height;
+            points.push({x: Math.min(progressX, canvas.width - 10), y: Math.max(progressY, 10)});
+
+            drawChart(false);
+            requestAnimationFrame(tick);
+        }
+
+        function drawChart(isCrashed) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (points.length < 2) return;
+
+            // Сетка
+            ctx.strokeStyle = '#2c2c35';
+            ctx.lineWidth = 1;
+            for(let i = 0; i < canvas.width; i += 50) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+            }
+            for(let i = 0; i < canvas.height; i += 50) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+
+            // Линия графика
+            ctx.beginPath();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = isCrashed ? '#ff3b30' : '#007aff';
+            ctx.moveTo(points[0].x, points[0].y);
+            
+            for(let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.stroke();
+
+            // Точка на конце
+            let lastPoint = points[points.length - 1];
+            ctx.beginPath();
+            ctx.arc(lastPoint.x, lastPoint.y, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = isCrashed ? '#ff3b30' : '#4cd964';
+            ctx.fill();
+        }
+
+        function updateUI() {
+            balanceDisplay.innerText = balance.toFixed(2);
+        }
+    </script>
+</body>
+</html>
